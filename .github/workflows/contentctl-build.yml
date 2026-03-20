@@ -1,0 +1,71 @@
+name: contentctl-build
+
+on:
+  pull_request:
+    branches: [main, master, develop]
+  push:
+    branches: [main, master, develop]
+  workflow_dispatch:
+
+concurrency:
+  group: contentctl-build-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: pip install --upgrade pip && pip install -r requirements.txt
+
+      # --- Optional: Clone external enrichment repo ---
+      # If your build requires enrichment data from an external repository,
+      # uncomment the step below and update the repository URL accordingly.
+      #
+      # - name: Clone enrichment repository
+      #   run: |
+      #     git clone https://github.com/your-org/enrichment-repo.git enrichments
+
+      - name: Run contentctl build
+        run: |
+          contentctl build
+          # To include enrichments in the build, use:
+          # contentctl build --enrichments
+
+      - name: Upload build artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: contentctl-build-output
+          path: output/
+          retention-days: 5
+
+      - name: Build summary
+        if: always()
+        run: |
+          if [ ${{ job.status }} == 'success' ]; then
+            echo "## :white_check_mark: contentctl build succeeded" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "## :x: contentctl build failed" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Branch:** \`${{ github.ref_name }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Commit:** \`${{ github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Triggered by:** \`${{ github.event_name }}\`" >> "$GITHUB_STEP_SUMMARY"
