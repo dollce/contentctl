@@ -3,6 +3,7 @@ id: a1b2c3d4-5678-9abc-def0-123456789abc
 version: 1
 date: '2024-01-15'
 author: dollce
+status: production
 description: >-
   This is a sample analytic story for verifying the contentctl CI/CD pipeline.
   It groups detections related to suspicious process activity on endpoints.
@@ -13,7 +14,6 @@ narrative: >-
 references:
   - https://attack.mitre.org/techniques/T1059/
 tags:
-  analytic_story: Sample Suspicious Activity
   category:
     - Adversary Tactics
   product:
