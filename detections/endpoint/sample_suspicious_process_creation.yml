@@ -1,14 +1,14 @@
 name: Sample Suspicious Process Creation
 id: f1a2b3c4-d5e6-7890-abcd-ef1234567890
-version: 1
-date: '2024-01-15'
+version: 2
+date: '2026-03-20'
 author: dollce
 status: production
 type: TTP
 description: >-
-  This is a sample detection to verify the contentctl CI/CD pipeline.
-  It detects suspicious process creation events using Sysmon EventCode 1 data
-  via the Endpoint datamodel. This detection uses tstats for performance.
+  Detects cmd.exe spawned from powershell.exe, a common technique used by
+  adversaries for command execution. This detection monitors Sysmon EventCode 1
+  process creation events via the Endpoint datamodel using tstats for performance.
 data_source:
 - Sysmon EventID 1
 search: '| tstats `security_content_summariesonly` count min(_time) as firstTime max(_time)
