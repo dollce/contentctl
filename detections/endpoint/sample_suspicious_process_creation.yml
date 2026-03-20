@@ -1,0 +1,73 @@
+name: Sample Suspicious Process Creation
+id: f1a2b3c4-d5e6-7890-abcd-ef1234567890
+version: 1
+date: '2024-01-15'
+author: dollce
+status: production
+type: TTP
+description: >-
+  This is a sample detection to verify the contentctl CI/CD pipeline.
+  It detects suspicious process creation events using Sysmon EventCode 1 data
+  via the Endpoint datamodel. This detection uses tstats for performance.
+data_source:
+- Sysmon EventID 1
+search: '| tstats `security_content_summariesonly` count min(_time) as firstTime max(_time)
+  as lastTime from datamodel=Endpoint.Processes where Processes.parent_process_name
+  IN ("powershell.exe") Processes.process_name="cmd.exe" by Processes.dest
+  Processes.user Processes.parent_process Processes.process_name Processes.process
+  Processes.process_id Processes.parent_process_id Processes.parent_process_name | `drop_dm_object_name(Processes)`
+  | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)`| `sample_suspicious_process_creation_filter`'
+how_to_implement: >-
+  You must be ingesting Sysmon EventCode 1 (Process Creation) data into the
+  Endpoint datamodel Processes node. This detection requires Sysmon to be
+  installed and configured on endpoints.
+known_false_positives: >-
+  Legitimate administrators may use cmd.exe spawned from powershell.exe for
+  routine tasks. Filter based on known admin accounts and expected patterns.
+references:
+- https://attack.mitre.org/techniques/T1059/003/
+drilldown_searches:
+- name: View the detection results for $user$ and $dest$
+  search: '%original_detection_search% | search  user = $user$ dest = $dest$'
+  earliest_offset: $info_min_time$
+  latest_offset: $info_max_time$
+- name: View risk events for the last 7 days for $user$ and $dest$
+  search: '| from datamodel Risk.All_Risk | search normalized_risk_object IN ($user$,
+    $dest$) starthoursago=168 endhoursago=1 | stats count min(_time) as firstTime
+    max(_time) as lastTime values(search_name) as "Search Name" values(risk_message)
+    as "Risk Message" values(analyticstories) as "Analytic Stories" values(annotations._all)
+    as "Annotations" values(annotations.mitre_attack.mitre_tactic) as "ATT&CK Tactics"
+    by normalized_risk_object | `security_content_ctime(firstTime)` | `security_content_ctime(lastTime)`'
+  earliest_offset: $info_min_time$
+  latest_offset: $info_max_time$
+rba:
+  message: Suspicious cmd.exe execution detected on $dest$ by $user$ spawned from $parent_process_name$
+  risk_objects:
+  - field: user
+    type: user
+    score: 15
+  - field: dest
+    type: system
+    score: 20
+  threat_objects:
+  - field: parent_process_name
+    type: parent_process_name
+  - field: process_name
+    type: process_name
+tags:
+  analytic_story:
+  - Sample Suspicious Activity
+  asset_type: Endpoint
+  mitre_attack_id:
+  - T1059.003
+  product:
+  - Splunk Enterprise
+  - Splunk Enterprise Security
+  - Splunk Cloud
+  security_domain: endpoint
+tests:
+- name: True Positive Test
+  attack_data:
+  - data: https://media.githubusercontent.com/media/splunk/attack_data/master/datasets/attack_techniques/T1059.001/powershell_script_block_logging/sysmon.log
+    source: XmlWinEventLog:Microsoft-Windows-Sysmon/Operational
+    sourcetype: xmlwineventlog

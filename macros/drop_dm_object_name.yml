@@ -1,0 +1,5 @@
+arguments:
+- object_name
+definition: 'rename "$object_name$.*" as *'
+description: Removes the CIM data model object name prefix from field names
+name: drop_dm_object_name

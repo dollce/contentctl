@@ -1,0 +1,4 @@
+definition: search *
+description: Filter macro for Sample Suspicious Process Creation detection.
+  Update this macro to filter out known false positives.
+name: sample_suspicious_process_creation_filter
