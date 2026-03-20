@@ -1,0 +1,87 @@
+name: contentctl-test
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main, master, develop]
+  workflow_dispatch:
+    inputs:
+      test_mode:
+        description: "Test mode"
+        type: choice
+        options:
+          - changes
+          - all
+        default: changes
+      target_branch:
+        description: "Target branch for comparison"
+        type: string
+        default: main
+
+concurrency:
+  group: contentctl-test-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch base branch
+        run: git fetch origin ${{ github.event.pull_request.base.ref || github.event.inputs.target_branch || 'main' }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: pip install --upgrade pip && pip install -r requirements.txt
+
+      - name: Run contentctl test
+        id: test_run
+        continue-on-error: true
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            contentctl test --disable-tqdm --no-enable-integration-testing \
+              --post-test-behavior never_pause \
+              mode:changes --mode.target-branch ${{ github.event.pull_request.base.ref }}
+          else
+            contentctl test --disable-tqdm --no-enable-integration-testing \
+              --post-test-behavior never_pause \
+              mode:${{ github.event.inputs.test_mode }} \
+              --mode.target-branch ${{ github.event.inputs.target_branch }}
+          fi
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: contentctl-test-results
+          path: test_results/
+          retention-days: 5
+
+      - name: Format test summary
+        if: always()
+        run: python .github/workflows/format_test_results.py
+
+      - name: Check test result
+        if: always()
+        run: |
+          if [ "${{ steps.test_run.outcome }}" != "success" ]; then
+            echo "contentctl test failed"
+            exit 1
+          fi
