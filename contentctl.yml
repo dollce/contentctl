@@ -1,0 +1,9 @@
+title: dollce_security_content
+version: 1.0.0
+description: Custom security content for Splunk - managed by contentctl
+prefix: DOLLCE
+
+build:
+  build_app: true
+  build_api: false
+  path_root: "."
