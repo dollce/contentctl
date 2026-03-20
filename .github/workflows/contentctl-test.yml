@@ -32,8 +32,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Fetch base branch
-        run: git fetch origin ${{ github.event.pull_request.base.ref || github.event.inputs.target_branch || 'main' }}
+      - name: Fetch and create local base branch
+        run: |
+          TARGET_BRANCH="${{ github.event.pull_request.base.ref || github.event.inputs.target_branch || 'main' }}"
+          git fetch origin "$TARGET_BRANCH"
+          git branch "$TARGET_BRANCH" "origin/$TARGET_BRANCH" 2>/dev/null || git branch -f "$TARGET_BRANCH" "origin/$TARGET_BRANCH"
 
       - name: Setup Python
         uses: actions/setup-python@v5
