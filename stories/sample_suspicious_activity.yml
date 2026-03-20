@@ -1,0 +1,23 @@
+name: Sample Suspicious Activity
+id: a1b2c3d4-5678-9abc-def0-123456789abc
+version: 1
+date: '2024-01-15'
+author: dollce
+description: >-
+  This is a sample analytic story for verifying the contentctl CI/CD pipeline.
+  It groups detections related to suspicious process activity on endpoints.
+narrative: >-
+  This analytic story serves as a template and CI/CD verification tool.
+  It demonstrates how to group related detections into a cohesive story
+  that security analysts can use to investigate suspicious endpoint activity.
+references:
+  - https://attack.mitre.org/techniques/T1059/
+tags:
+  analytic_story: Sample Suspicious Activity
+  category:
+    - Adversary Tactics
+  product:
+    - Splunk Enterprise
+    - Splunk Enterprise Security
+    - Splunk Cloud
+  usecase: Security Monitoring
